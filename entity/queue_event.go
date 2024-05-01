@@ -5,11 +5,13 @@ import (
 )
 
 type QueueEvent struct {
+	ID     uint           `json:"id"`
 	Meta   QueueEventMeta `json:"meta"`
 	Entity interface{}    `json:"entity"`
 }
 
 type QueueEventMeta struct {
+	ID         uint            `json:"id"`
 	Type       QueueEventType  `json:"type"`
 	Date       time.Time       `json:"date"`
 	AgentID    uint            `json:"agent_id"`
@@ -19,16 +21,14 @@ type QueueEventMeta struct {
 type QueueEventType int8
 
 const (
-	_               = iota
-	OrderEntityType = 1
+	OrderEntityType QueueEventType = iota + 1
 )
 
 type EventActionType int8
 
 const (
-	_               = iota
-	EventCreateType = 1
-	EventUpdateType = 2
-	EventDeleteType = 3
-	EventGetType    = 4
+	EventCreateType EventActionType = iota + 1
+	EventUpdateType
+	EventDeleteType
+	EventGetType
 )

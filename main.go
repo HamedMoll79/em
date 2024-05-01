@@ -14,6 +14,7 @@ import (
 var migrateFlag = flag.String("migrate", "", "Run migration up or down")
 
 func main() {
+	flag.Parse()
 	fmt.Println("\n\n\n\n\n start \n\n\n\n\n")
 	//cfg, err := config.Load()
 	//if err != nil {
@@ -27,12 +28,35 @@ func main() {
 			Username: "sazito",
 			Password: "Sazito123",
 			Port:     5432,
-			Host:     "localhost",
-			DBName:   "sazito_evnet_manager",
+			Host:     "em-database",
+			DBName:   "sazito_event_manager",
 			Driver:   "postgres",
 			Schema:   "",
 		},
 	}
+
+	/*pgdatabase := postgresql.PgDatabase{
+		DBConfig: postgresql.Config{
+			Username: "sazito",
+			Password: "Sazito123",
+			Port:     5432,
+			Host:     "em-database",
+			DBName:   "sazito_event_manager",
+			Driver:   "postgres",
+			Schema:   "",
+		},
+		Database: nil,
+	}*/
+
+	//fmt.Printf("pgdatabase: %+v\n", pgdatabase)
+
+	//db, err := sql.Open("postgres", pgdatabase.DBConfig.DSN())
+
+	//fmt.Printf("\nopen db error : %v \n ", err)
+
+	//err = db.Ping()
+
+	//fmt.Printf("\nping db error : %v \n ", err)
 
 	controller := postgresql.NewPgController(postgresql.Config{
 		Username: cfg.Postgres.Username,
@@ -59,6 +83,11 @@ func main() {
 
 	mgr := migrator.New(controller.GetDataContext(), "./repository/postgresql/migrations")
 	migrateOperation(*migrateFlag, mgr)
+	//todo - redis connection
+	//TODO- setup services
+	//todo - setup router
+
+	//todo - test fake publisher redis and consume
 }
 
 func migrateOperation(flag string, mg migrator.Migrator) {
