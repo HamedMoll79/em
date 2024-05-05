@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"gitlab.sazito.com/sazito/event_publisher/adapter/redis_adapter"
 	"gitlab.sazito.com/sazito/event_publisher/config"
 	"gitlab.sazito.com/sazito/event_publisher/pkg/postgresql"
@@ -80,6 +82,17 @@ func main() {
 	mgr := migrator.New(controller.GetDataContext(), "./repository/postgresql/migrations")
 	migrateOperation(*migrateFlag, mgr)
 
+	services := setUpServices(cfg, controller)
+
+	redisDB := services.redisDB
+
+	pingResult, err := redisDB.Conn().Ping(context.Background()).Result()
+
+	if err != nil {
+		fmt.Printf("cant ping redis %v", err)
+	}
+
+	fmt.Printf("ping result %v\n", pingResult)
 	//todo - redis connection
 	//TODO- setup services
 	//todo - setup router
@@ -95,11 +108,13 @@ type GlobalServices struct {
 func setUpServices(cfg config.Config, controller *postgresql.PgController) GlobalServices {
 	rediscfg := redis_adapter.Config{
 		UserName: "",
-		Host:     "md-redis",
-		Port:     "6379",
+		Host:     "em-redis",
+		Port:     "6380",
 		Password: "",
 		DB:       0,
 	}
+
+	fmt.Printf("")
 
 	redisAdapter := redis_adapter.New(rediscfg)
 	redisDB := redis_db.New(redisAdapter.Client().Conn())
