@@ -3,34 +3,30 @@ package event_service
 import (
 	"context"
 	"encoding/json"
-	"github.com/adjust/redismq"
-	"gitlab.sazito.com/sazito/event_publisher/adapter/redis_adapter"
 	"gitlab.sazito.com/sazito/event_publisher/entity"
-	"gitlab.sazito.com/sazito/event_publisher/pkg/errmsg"
 	"gitlab.sazito.com/sazito/event_publisher/pkg/richerror"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func ReadAndAckFromRedis(consumer *redismq.Consumer) (string, error) {
-	pkg, err := consumer.Get()
-	if err != nil {
-		return "", err
-	}
-
-	payload := pkg.Payload
-
-	err = pkg.Ack()
-	if err != nil {
-		return "", err
-	}
-
-	return payload, nil
-}
+//func ReadAndAckFromRedis(consumer *redismq.Consumer) (string, error) {
+//	pkg, err := consumer.Get()
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	payload := pkg.Payload
+//
+//	err = pkg.Ack()
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	return payload, nil
+//}
 
 type ReadAndSaveAndSendRequest struct {
-	Queue redismq.Queue
 }
 
 type ReadAndSaveAndSendResponse struct {
@@ -40,31 +36,34 @@ type ReadAndSaveAndSendResponse struct {
 func (s Service) ReadAndSaveAndSend(ctx context.Context, req ReadAndSaveAndSendRequest) (ReadAndSaveAndSendResponse, error) {
 	const op = "event_service.ReadAndSaveAndSend"
 
-	consumer, err := redis_adapter.NewConsumer(req.Queue, "test")
+	message, err := s.RedisDB.FetchMessage(ctx, s.RedisQueueName)
+
+	var event entity.Event
+	err = json.Unmarshal([]byte(message), event)
 	if err != nil {
 
 		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err).WithKind(richerror.KindUnexpected)
 	}
 
-	payload, err := ReadAndAckFromRedis(consumer)
-	if err != nil {
-
-		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err).WithKind(richerror.KindUnexpected)
-	}
-
-	var order entity.Order
-	err = json.Unmarshal([]byte(payload), &order)
-	if err != nil {
-		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err).WithKind(richerror.KindUnexpected).WithMessage(errmsg.ErrorMsgCantUnmarshal.String())
-	}
-
-	order, err = s.EventRepo.Save(ctx, order)
+	event, err = s.EventRepo.Save(ctx, event)
 	if err != nil {
 
 		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err)
 	}
 
-	request, err := http.NewRequest("POST", order.WebHookURL, strings.NewReader(order.MetaData))
+	jsonEvent, err := json.Marshal(event)
+	if err != nil {
+
+		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err).WithKind(richerror.KindUnexpected)
+	}
+
+	webhook, err := s.WebhookRepo.GetByStoreID(ctx, event.StoreID)
+	if err != nil {
+
+		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err)
+	}
+
+	request, err := http.NewRequest("POST", webhook.Url, strings.NewReader(string(jsonEvent)))
 	if err != nil {
 
 		return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err).WithKind(richerror.KindUnexpected)
@@ -85,9 +84,11 @@ func (s Service) ReadAndSaveAndSend(ctx context.Context, req ReadAndSaveAndSendR
 	response.StatusCode = resp.StatusCode
 
 	if response.StatusCode == 200 {
-		order, err := s.EventRepo.ModifyIsPublished(ctx, order, true)
+		event, err = s.EventRepo.ModifyIsPublished(ctx, event, true)
 		if err != nil {
-			return ReadAndSaveAndSendResponse{}, richerror.New(op).WithErr(err)
+			return response, richerror.New(op).WithErr(err)
 		}
 	}
+
+	return response, nil
 }

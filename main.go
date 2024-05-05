@@ -105,8 +105,9 @@ func setUpServices(cfg config.Config, controller *postgresql.PgController) Globa
 	redisDB := redis_db.New(redisAdapter.Client().Conn())
 
 	eventRepo := postgresql2.NewEventsRepository(controller)
+	webhookRepo := postgresql2.NewWebhooksRepository(controller)
 
-	eventSrv := event_service.New(redisAdapter.Client(), eventRepo)
+	eventSrv := event_service.New(redisDB, eventRepo, webhookRepo)
 
 	return GlobalServices{
 		redisDB:      redisDB,

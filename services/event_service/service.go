@@ -2,13 +2,15 @@ package event_service
 
 import (
 	"context"
-	"github.com/redis/go-redis/v9"
 	"gitlab.sazito.com/sazito/event_publisher/entity"
+	"gitlab.sazito.com/sazito/event_publisher/repository/redis_db"
 )
 
 type Service struct {
-	RedisDB   *redis.Client
-	EventRepo eventRepository
+	RedisDB        *redis_db.DB
+	EventRepo      eventRepository
+	RedisQueueName string
+	WebhookRepo    webHookRepository
 }
 
 type eventRepository interface {
@@ -16,9 +18,14 @@ type eventRepository interface {
 	ModifyIsPublished(ctx context.Context, order entity.Event, isPublished bool) (entity.Event, error)
 }
 
-func New(redisDB *redis.Client, eventRepo eventRepository) Service {
+type webHookRepository interface {
+	GetByStoreID(ctx context.Context, storeID uint) (entity.Webhook, error)
+}
+
+func New(redisDB *redis_db.DB, eventRepo eventRepository, webhookRepo webHookRepository) Service {
 	return Service{
-		RedisDB:   redisDB,
-		EventRepo: eventRepo,
+		RedisDB:     redisDB,
+		EventRepo:   eventRepo,
+		WebhookRepo: webhookRepo,
 	}
 }

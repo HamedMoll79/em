@@ -10,6 +10,10 @@ func NewPgRepo(withTestID bool) *PgRepo {
 	return &PgRepo{withTestID: withTestID}
 }
 
-func (p PgRepo) NewOrdersRepository(getter postgresql.DataContextGetter) *eventsRepository {
+func (p PgRepo) NewEventsRepository(getter postgresql.DataContextGetter) *eventsRepository {
 	return NewEventsRepository(getter)
+}
+
+func (p PgRepo) NewWebhooksRepository(getter postgresql.DataContextGetter) *webhooksRepository {
+	return NewWebhooksRepository(getter)
 }
