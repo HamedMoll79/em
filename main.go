@@ -109,7 +109,7 @@ func setUpServices(cfg config.Config, controller *postgresql.PgController) Globa
 	rediscfg := redis_adapter.Config{
 		UserName: "",
 		Host:     "em-redis",
-		Port:     "6380",
+		Port:     "6379",
 		Password: "",
 		DB:       0,
 	}
