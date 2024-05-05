@@ -43,20 +43,16 @@ func (d *PgController) Generate() error {
 	sd := NewPgDatabase(d.config)
 	d.db = sd
 	err := sd.open()
-	fmt.Printf("error open : %v", err)
 	if err != nil {
 		return err
 	}
-	fmt.Println("before get db")
 	tx, err := sd.GetDB().Begin()
-	fmt.Printf("error get db : %v \n", err)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
 	_, err = sd.GetDB().Exec(fmt.Sprintf(DBCreateDMLIfNotExist, d.config.DBName))
-	fmt.Printf("error get db 2: %v \n", err)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			tx.Rollback()
@@ -68,7 +64,6 @@ func (d *PgController) Generate() error {
 }
 
 func (d *PgController) Init() error {
-	fmt.Print("start init db")
 	if d.testDB {
 		err := d.dropSchema()
 		if err != nil {

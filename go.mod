@@ -5,15 +5,15 @@ go 1.21
 require (
 	github.com/adjust/redismq v0.0.0-20220420072240-21a19167d346
 	github.com/caarlos0/env/v8 v8.0.0
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/lib/pq v1.10.9
+	github.com/redis/go-redis/v9 v9.5.1
 	github.com/rubenv/sql-migrate v1.6.1
 	github.com/satori/go.uuid v1.2.0
 )
 
 require (
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/garyburd/redigo v1.6.4 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
@@ -24,6 +24,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/matttproud/gocheck v0.0.0-20130118152435-ecced547db7c // indirect
+	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.33.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect

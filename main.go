@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	_ "github.com/lib/pq"
-	"gitlab.sazito.com/sazito/event_publisher/adapter/redisqueue"
+	"gitlab.sazito.com/sazito/event_publisher/adapter/redis_adapter"
 	"gitlab.sazito.com/sazito/event_publisher/config"
 	"gitlab.sazito.com/sazito/event_publisher/pkg/postgresql"
 	"gitlab.sazito.com/sazito/event_publisher/repository/migrator"
+	postgresql2 "gitlab.sazito.com/sazito/event_publisher/repository/postgresql"
+	"gitlab.sazito.com/sazito/event_publisher/repository/redis_db"
+	"gitlab.sazito.com/sazito/event_publisher/services/event_service"
 	"log"
 )
 
@@ -15,7 +16,6 @@ var migrateFlag = flag.String("migrate", "", "Run migration up or down")
 
 func main() {
 	flag.Parse()
-	fmt.Println("\n\n\n\n\n start \n\n\n\n\n")
 	//cfg, err := config.Load()
 	//if err != nil {
 	//	panic(err)
@@ -23,7 +23,7 @@ func main() {
 
 	cfg := config.Config{
 		HTTPServer: config.HTTPServer{},
-		Redis:      redisqueue.Config{},
+		Redis:      redis_adapter.Config{},
 		Postgres: postgresql.Config{
 			Username: "sazito",
 			Password: "Sazito123",
@@ -68,21 +68,18 @@ func main() {
 		Schema:   cfg.Postgres.Schema,
 	}, false)
 	err := controller.Generate()
-	fmt.Println("\n after generate \n")
 	if err != nil {
-		log.Println("Error controller.Generate", err)
 		panic(err)
 	}
 
-	fmt.Println("\n before init \n")
 	err = controller.Init()
 	if err != nil {
-		log.Println("Error controller.Init", err)
 		panic(err)
 	}
 
 	mgr := migrator.New(controller.GetDataContext(), "./repository/postgresql/migrations")
 	migrateOperation(*migrateFlag, mgr)
+
 	//todo - redis connection
 	//TODO- setup services
 	//todo - setup router
@@ -90,8 +87,34 @@ func main() {
 	//todo - test fake publisher redis and consume
 }
 
+type GlobalServices struct {
+	eventService event_service.Service
+	redisDB      *redis_db.DB
+}
+
+func setUpServices(cfg config.Config, controller *postgresql.PgController) GlobalServices {
+	rediscfg := redis_adapter.Config{
+		UserName: "",
+		Host:     "md-redis",
+		Port:     "6379",
+		Password: "",
+		DB:       0,
+	}
+
+	redisAdapter := redis_adapter.New(rediscfg)
+	redisDB := redis_db.New(redisAdapter.Client().Conn())
+
+	eventRepo := postgresql2.NewEventsRepository(controller)
+
+	eventSrv := event_service.New(redisAdapter.Client(), eventRepo)
+
+	return GlobalServices{
+		redisDB:      redisDB,
+		eventService: eventSrv,
+	}
+}
+
 func migrateOperation(flag string, mg migrator.Migrator) {
-	fmt.Printf("\n\n\n\n\n flag : %s \n\n\n\n\n", flag)
 	switch flag {
 	case "up":
 		mg.Up()

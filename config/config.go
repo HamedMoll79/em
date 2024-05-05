@@ -1,7 +1,7 @@
 package config
 
 import (
-	"gitlab.sazito.com/sazito/event_publisher/adapter/redisqueue"
+	"gitlab.sazito.com/sazito/event_publisher/adapter/redis_adapter"
 	"gitlab.sazito.com/sazito/event_publisher/pkg/postgresql"
 )
 
@@ -11,6 +11,6 @@ type HTTPServer struct {
 
 type Config struct {
 	HTTPServer HTTPServer `env:"SMD_SERVE_HTTP"`
-	Redis	redisqueue.Config
-	Postgres postgresql.Config
+	Redis      redis_adapter.Config
+	Postgres   postgresql.Config
 }
